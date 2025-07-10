@@ -19,6 +19,7 @@ func (app *application) routes() http.Handler {
 	mux := pat.New()
 
 	// Users
+	mux.Post("/user/sign_up", standardMiddleware.ThenFunc(app.userHandler.SignUp))
 	mux.Post("/user/sign_in", standardMiddleware.ThenFunc(app.userHandler.SignIn))
 
 	// Reviews
