@@ -1,3 +1,4 @@
 database.yml
-
+internal/config/config.go
+config/config.yaml
 .env
