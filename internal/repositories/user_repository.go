@@ -83,3 +83,4 @@ func (r *UserRepository) GetUserByLogin(ctx context.Context, login string) (mode
 	}
 	return user, nil
 }
+
