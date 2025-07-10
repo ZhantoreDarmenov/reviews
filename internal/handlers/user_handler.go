@@ -13,10 +13,12 @@ type UserHandler struct {
 	Service *services.UserService
 }
 
+
 // SignUp registers a new user and returns auth tokens.
 func (h *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -25,6 +27,7 @@ func (h *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("sign up error: %v", err)
 		http.Error(w, "failed to sign up", http.StatusInternalServerError)
+
 		return
 	}
 

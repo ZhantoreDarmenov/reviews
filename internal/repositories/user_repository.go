@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	_ "fmt"
 	"reviews/internal/models"
+
 	_ "strings"
+
 	"time"
 )
 
@@ -83,6 +84,7 @@ func (r *UserRepository) GetUserByLogin(ctx context.Context, login string) (mode
 	return user, nil
 }
 
+
 // CreateUser inserts a new user record and returns the created user with ID set.
 func (r *UserRepository) CreateUser(ctx context.Context, user models.User) (models.User, error) {
 	query := `
@@ -101,4 +103,8 @@ func (r *UserRepository) CreateUser(ctx context.Context, user models.User) (mode
 	}
 	user.ID = int(id)
 	return user, nil
+
+
+	return int(id), nil
+
 }

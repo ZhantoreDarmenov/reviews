@@ -57,7 +57,9 @@ func (h *ReviewHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	rev := models.Reviews{
 		Name:        name,
+
 		Photo:       fmt.Sprintf("/images/reviews/%s", filename),
+
 		Description: description,
 		Rating:      rating,
 	}
