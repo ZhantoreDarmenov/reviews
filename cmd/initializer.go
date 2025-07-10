@@ -27,6 +27,7 @@ type application struct {
 	userRepo      *repositories.UserRepository
 	reviewHandler *handlers.ReviewHandler
 	reviewRepo    *repositories.ReviewRepository
+	imageHandler  *handlers.ImageHandler
 }
 
 func initializeApp(db *sql.DB, errorLog, infoLog *log.Logger) *application {
@@ -37,6 +38,8 @@ func initializeApp(db *sql.DB, errorLog, infoLog *log.Logger) *application {
 	// Services
 	userService := &services.UserService{UserRepo: &userRepo}
 	reviewService := &services.ReviewService{Repo: &reviewRepo}
+
+	imageHandler := &handlers.ImageHandler{}
 
 	// Handlers
 	userHandler := &handlers.UserHandler{Service: userService}
@@ -49,6 +52,7 @@ func initializeApp(db *sql.DB, errorLog, infoLog *log.Logger) *application {
 		userRepo:      &userRepo,
 		reviewHandler: reviewHandler,
 		reviewRepo:    &reviewRepo,
+		imageHandler:  imageHandler,
 	}
 }
 
