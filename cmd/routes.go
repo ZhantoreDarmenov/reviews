@@ -28,6 +28,9 @@ func (app *application) routes() http.Handler {
 	mux.Put("/reviews/:id", authMiddleware.ThenFunc(app.reviewHandler.Update))
 	mux.Del("/reviews/:id", authMiddleware.ThenFunc(app.reviewHandler.Delete))
 
+	// Review images
+	mux.Get("/images/reviews/:filename", http.HandlerFunc(app.reviewHandler.ServeReviewImage))
+
 	// mux.Get("/swagger/", httpSwagger.WrapHandler)
 
 	return standardMiddleware.Then(mux)
