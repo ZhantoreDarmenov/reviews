@@ -7,7 +7,7 @@ import (
 	_ "fmt"
 	"reviews/internal/models"
 	_ "strings"
-	_ "time"
+	"time"
 )
 
 var (
@@ -80,5 +80,25 @@ func (r *UserRepository) GetUserByLogin(ctx context.Context, login string) (mode
 	if err != nil {
 		return models.User{}, err
 	}
+	return user, nil
+}
+
+// CreateUser inserts a new user record and returns the created user with ID set.
+func (r *UserRepository) CreateUser(ctx context.Context, user models.User) (models.User, error) {
+	query := `
+        INSERT INTO users (name, password, role, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?)
+    `
+	user.CreatedAt = time.Now()
+	user.UpdatedAt = &user.CreatedAt
+	res, err := r.DB.ExecContext(ctx, query, user.Name, user.Password, user.Role, user.CreatedAt, user.UpdatedAt)
+	if err != nil {
+		return models.User{}, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return models.User{}, err
+	}
+	user.ID = int(id)
 	return user, nil
 }

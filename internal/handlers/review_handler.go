@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -35,9 +36,14 @@ func (h *ReviewHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	os.MkdirAll("uploads", 0755)
-	filename := strconv.FormatInt(time.Now().UnixNano(), 10) + filepath.Ext(header.Filename)
-	outPath := filepath.Join("uploads", filename)
+	saveDir := filepath.Join("uploads", "reviews")
+	if err := os.MkdirAll(saveDir, 0755); err != nil {
+		http.Error(w, "unable to create image directory", http.StatusInternalServerError)
+		return
+	}
+
+	filename := fmt.Sprintf("review_%d%s", time.Now().UnixNano(), filepath.Ext(header.Filename))
+	outPath := filepath.Join(saveDir, filename)
 	dst, err := os.Create(outPath)
 	if err != nil {
 		http.Error(w, "unable to save file", http.StatusInternalServerError)
@@ -51,7 +57,7 @@ func (h *ReviewHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	rev := models.Reviews{
 		Name:        name,
-		Photo:       "/static/" + filename,
+		Photo:       fmt.Sprintf("/images/reviews/%s", filename),
 		Description: description,
 		Rating:      rating,
 	}
@@ -84,13 +90,55 @@ func (h *ReviewHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ReviewHandler) Update(w http.ResponseWriter, r *http.Request) {
-	id, _ := strconv.Atoi(r.URL.Query().Get(":id"))
-	var rev models.Reviews
-	if err := json.NewDecoder(r.Body).Decode(&rev); err != nil {
-		http.Error(w, "invalid body", http.StatusBadRequest)
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		http.Error(w, "failed to parse form", http.StatusBadRequest)
 		return
 	}
-	rev.ID = id
+
+	id, _ := strconv.Atoi(r.URL.Query().Get(":id"))
+	name := r.FormValue("name")
+	description := r.FormValue("description")
+	ratingStr := r.FormValue("rating")
+	rating, _ := strconv.Atoi(ratingStr)
+
+	existing, err := h.Service.GetByID(r.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	photoPath := existing.Photo
+	file, header, err := r.FormFile("photo")
+	if err == nil {
+		defer file.Close()
+		saveDir := filepath.Join("uploads", "reviews")
+		if err := os.MkdirAll(saveDir, 0755); err != nil {
+			http.Error(w, "unable to create image directory", http.StatusInternalServerError)
+			return
+		}
+		filename := fmt.Sprintf("review_%d%s", time.Now().UnixNano(), filepath.Ext(header.Filename))
+		outPath := filepath.Join(saveDir, filename)
+		dst, err := os.Create(outPath)
+		if err != nil {
+			http.Error(w, "unable to save file", http.StatusInternalServerError)
+			return
+		}
+		defer dst.Close()
+		if _, err := io.Copy(dst, file); err != nil {
+			http.Error(w, "unable to save file", http.StatusInternalServerError)
+			return
+		}
+		photoPath = fmt.Sprintf("/images/reviews/%s", filename)
+	}
+
+	rev := models.Reviews{
+		ID:          id,
+		Name:        name,
+		Photo:       photoPath,
+		Description: description,
+		Rating:      rating,
+	}
+
 	updated, err := h.Service.Update(r.Context(), rev)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -106,4 +154,32 @@ func (h *ReviewHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// ServeReviewImage handles GET /images/reviews/:filename requests and serves saved review images.
+func (h *ReviewHandler) ServeReviewImage(w http.ResponseWriter, r *http.Request) {
+	filename := r.URL.Query().Get(":filename")
+	if filename == "" {
+		http.Error(w, "filename is required", http.StatusBadRequest)
+		return
+	}
+
+	imagePath := filepath.Join("uploads", "reviews", filename)
+	if _, err := os.Stat(imagePath); os.IsNotExist(err) {
+		http.Error(w, "image not found", http.StatusNotFound)
+		return
+	}
+
+	switch filepath.Ext(imagePath) {
+	case ".jpg", ".jpeg":
+		w.Header().Set("Content-Type", "image/jpeg")
+	case ".png":
+		w.Header().Set("Content-Type", "image/png")
+	case ".gif":
+		w.Header().Set("Content-Type", "image/gif")
+	default:
+		w.Header().Set("Content-Type", "application/octet-stream")
+	}
+
+	http.ServeFile(w, r, imagePath)
 }

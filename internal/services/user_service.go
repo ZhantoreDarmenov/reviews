@@ -25,6 +25,37 @@ type UserService struct {
 	TokenManager *utils.Manager
 }
 
+// SignUp creates a new user and returns auth tokens for the newly created account.
+func (s *UserService) SignUp(ctx context.Context, user models.User) (models.Tokens, error) {
+	hashed, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return models.Tokens{}, err
+	}
+	user.Password = string(hashed)
+	user.Role = "user"
+
+	created, err := s.UserRepo.CreateUser(ctx, user)
+	if err != nil {
+		return models.Tokens{}, err
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(tokenTTL).Unix(),
+			IssuedAt:  time.Now().Unix(),
+		},
+		UserID: created.ID,
+		Role:   created.Role,
+	})
+
+	accessToken, err := token.SignedString([]byte(signingKey))
+	if err != nil {
+		return models.Tokens{}, err
+	}
+
+	return s.CreateSession(ctx, created, accessToken)
+}
+
 func (s *UserService) SignIn(ctx context.Context, login, password string) (models.Tokens, error) {
 	user, err := s.UserRepo.GetUserByLogin(ctx, login)
 	if err != nil {
