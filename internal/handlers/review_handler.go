@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -35,9 +36,14 @@ func (h *ReviewHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	os.MkdirAll("uploads", 0755)
-	filename := strconv.FormatInt(time.Now().UnixNano(), 10) + filepath.Ext(header.Filename)
-	outPath := filepath.Join("uploads", filename)
+	saveDir := filepath.Join("uploads", "reviews")
+	if err := os.MkdirAll(saveDir, 0755); err != nil {
+		http.Error(w, "unable to create image directory", http.StatusInternalServerError)
+		return
+	}
+
+	filename := fmt.Sprintf("review_%d%s", time.Now().UnixNano(), filepath.Ext(header.Filename))
+	outPath := filepath.Join(saveDir, filename)
 	dst, err := os.Create(outPath)
 	if err != nil {
 		http.Error(w, "unable to save file", http.StatusInternalServerError)
@@ -51,7 +57,7 @@ func (h *ReviewHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	rev := models.Reviews{
 		Name:        name,
-		Photo:       "/static/" + filename,
+		Photo:       fmt.Sprintf("/static/reviews/%s", filename),
 		Description: description,
 		Rating:      rating,
 	}
