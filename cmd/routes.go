@@ -28,13 +28,6 @@ func (app *application) routes() http.Handler {
 	mux.Put("/reviews/:id", authMiddleware.ThenFunc(app.reviewHandler.Update))
 	mux.Del("/reviews/:id", authMiddleware.ThenFunc(app.reviewHandler.Delete))
 
-	// Reviews
-	mux.Post("/reviews", authMiddleware.ThenFunc(app.reviewHandler.Create))
-	mux.Get("/reviews", authMiddleware.ThenFunc(app.reviewHandler.GetAll))
-	mux.Get("/reviews/:id", authMiddleware.ThenFunc(app.reviewHandler.GetByID))
-	mux.Put("/reviews/:id", authMiddleware.ThenFunc(app.reviewHandler.Update))
-	mux.Del("/reviews/:id", authMiddleware.ThenFunc(app.reviewHandler.Delete))
-
 	// mux.Get("/swagger/", httpSwagger.WrapHandler)
 
 	return standardMiddleware.Then(mux)

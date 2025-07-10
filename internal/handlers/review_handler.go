@@ -2,8 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"time"
 
 	"reviews/internal/models"
 	"reviews/internal/services"
@@ -14,11 +18,44 @@ type ReviewHandler struct {
 }
 
 func (h *ReviewHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var rev models.Reviews
-	if err := json.NewDecoder(r.Body).Decode(&rev); err != nil {
-		http.Error(w, "invalid body", http.StatusBadRequest)
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		http.Error(w, "failed to parse form", http.StatusBadRequest)
 		return
 	}
+
+	name := r.FormValue("name")
+	description := r.FormValue("description")
+	ratingStr := r.FormValue("rating")
+	rating, _ := strconv.Atoi(ratingStr)
+
+	file, header, err := r.FormFile("photo")
+	if err != nil {
+		http.Error(w, "photo is required", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	os.MkdirAll("uploads", 0755)
+	filename := strconv.FormatInt(time.Now().UnixNano(), 10) + filepath.Ext(header.Filename)
+	outPath := filepath.Join("uploads", filename)
+	dst, err := os.Create(outPath)
+	if err != nil {
+		http.Error(w, "unable to save file", http.StatusInternalServerError)
+		return
+	}
+	defer dst.Close()
+	if _, err = io.Copy(dst, file); err != nil {
+		http.Error(w, "unable to save file", http.StatusInternalServerError)
+		return
+	}
+
+	rev := models.Reviews{
+		Name:        name,
+		Photo:       "/static/" + filename,
+		Description: description,
+		Rating:      rating,
+	}
+
 	created, err := h.Service.Create(r.Context(), rev)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

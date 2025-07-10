@@ -7,7 +7,6 @@ import (
 	_ "fmt"
 	"reviews/internal/models"
 	_ "strings"
-	"time"
 	_ "time"
 )
 
@@ -83,4 +82,3 @@ func (r *UserRepository) GetUserByLogin(ctx context.Context, login string) (mode
 	}
 	return user, nil
 }
-
