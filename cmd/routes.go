@@ -19,6 +19,7 @@ func (app *application) routes() http.Handler {
 	mux := pat.New()
 
 	// Users
+	mux.Post("/user/sign_up", standardMiddleware.ThenFunc(app.userHandler.SignUp))
 	mux.Post("/user/sign_in", standardMiddleware.ThenFunc(app.userHandler.SignIn))
 
 	// Reviews
@@ -27,6 +28,9 @@ func (app *application) routes() http.Handler {
 	mux.Get("/reviews/:id", authMiddleware.ThenFunc(app.reviewHandler.GetByID))
 	mux.Put("/reviews/:id", authMiddleware.ThenFunc(app.reviewHandler.Update))
 	mux.Del("/reviews/:id", authMiddleware.ThenFunc(app.reviewHandler.Delete))
+
+	// Images
+	mux.Get("/images/services/:filename", http.HandlerFunc(app.imageHandler.ServeServiceImage))
 
 	// mux.Get("/swagger/", httpSwagger.WrapHandler)
 

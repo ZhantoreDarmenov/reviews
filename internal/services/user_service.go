@@ -25,6 +25,33 @@ type UserService struct {
 	TokenManager *utils.Manager
 }
 
+func (s *UserService) SignUp(ctx context.Context, login, password, role string) (models.Tokens, error) {
+	if role == "" {
+		role = "client"
+	}
+
+	_, err := s.UserRepo.GetUserByLogin(ctx, login)
+	if err == nil {
+		return models.Tokens{}, errors.New("user already exists")
+	}
+	if err != nil && !errors.Is(err, repositories.ErrUserNotFound) {
+		return models.Tokens{}, err
+	}
+
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return models.Tokens{}, err
+	}
+
+	user := models.User{Name: login, Password: string(hashed), Role: role}
+	_, err = s.UserRepo.CreateUser(ctx, user)
+	if err != nil {
+		return models.Tokens{}, err
+	}
+
+	return s.SignIn(ctx, login, password)
+}
+
 func (s *UserService) SignIn(ctx context.Context, login, password string) (models.Tokens, error) {
 	user, err := s.UserRepo.GetUserByLogin(ctx, login)
 	if err != nil {

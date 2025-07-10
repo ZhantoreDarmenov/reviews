@@ -13,6 +13,24 @@ type UserHandler struct {
 	Service *services.UserService
 }
 
+func (h *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
+	var req models.SignUpRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	tokens, err := h.Service.SignUp(r.Context(), req.Login, req.Password, req.Role)
+	if err != nil {
+		log.Printf("sign up error: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tokens)
+}
+
 func (h *UserHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 	var req models.SignInRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
