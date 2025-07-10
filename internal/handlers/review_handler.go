@@ -92,13 +92,55 @@ func (h *ReviewHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ReviewHandler) Update(w http.ResponseWriter, r *http.Request) {
-	id, _ := strconv.Atoi(r.URL.Query().Get(":id"))
-	var rev models.Reviews
-	if err := json.NewDecoder(r.Body).Decode(&rev); err != nil {
-		http.Error(w, "invalid body", http.StatusBadRequest)
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		http.Error(w, "failed to parse form", http.StatusBadRequest)
 		return
 	}
-	rev.ID = id
+
+	id, _ := strconv.Atoi(r.URL.Query().Get(":id"))
+	name := r.FormValue("name")
+	description := r.FormValue("description")
+	ratingStr := r.FormValue("rating")
+	rating, _ := strconv.Atoi(ratingStr)
+
+	existing, err := h.Service.GetByID(r.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	photoPath := existing.Photo
+	file, header, err := r.FormFile("photo")
+	if err == nil {
+		defer file.Close()
+		saveDir := filepath.Join("uploads", "reviews")
+		if err := os.MkdirAll(saveDir, 0755); err != nil {
+			http.Error(w, "unable to create image directory", http.StatusInternalServerError)
+			return
+		}
+		filename := fmt.Sprintf("review_%d%s", time.Now().UnixNano(), filepath.Ext(header.Filename))
+		outPath := filepath.Join(saveDir, filename)
+		dst, err := os.Create(outPath)
+		if err != nil {
+			http.Error(w, "unable to save file", http.StatusInternalServerError)
+			return
+		}
+		defer dst.Close()
+		if _, err := io.Copy(dst, file); err != nil {
+			http.Error(w, "unable to save file", http.StatusInternalServerError)
+			return
+		}
+		photoPath = fmt.Sprintf("/images/reviews/%s", filename)
+	}
+
+	rev := models.Reviews{
+		ID:          id,
+		Name:        name,
+		Photo:       photoPath,
+		Description: description,
+		Rating:      rating,
+	}
+
 	updated, err := h.Service.Update(r.Context(), rev)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

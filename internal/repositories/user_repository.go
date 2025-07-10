@@ -5,6 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"reviews/internal/models"
+
+	_ "strings"
+
 	"time"
 )
 
@@ -81,21 +84,27 @@ func (r *UserRepository) GetUserByLogin(ctx context.Context, login string) (mode
 	return user, nil
 }
 
-func (r *UserRepository) CreateUser(ctx context.Context, user models.User) (int, error) {
+
+// CreateUser inserts a new user record and returns the created user with ID set.
+func (r *UserRepository) CreateUser(ctx context.Context, user models.User) (models.User, error) {
 	query := `
-                INSERT INTO users (name, password, role, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?)
-        `
-
-	res, err := r.DB.ExecContext(ctx, query, user.Name, user.Password, user.Role, time.Now(), time.Now())
+        INSERT INTO users (name, password, role, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?)
+    `
+	user.CreatedAt = time.Now()
+	user.UpdatedAt = &user.CreatedAt
+	res, err := r.DB.ExecContext(ctx, query, user.Name, user.Password, user.Role, user.CreatedAt, user.UpdatedAt)
 	if err != nil {
-		return 0, err
+		return models.User{}, err
 	}
-
 	id, err := res.LastInsertId()
 	if err != nil {
-		return 0, err
+		return models.User{}, err
 	}
+	user.ID = int(id)
+	return user, nil
+
 
 	return int(id), nil
+
 }
