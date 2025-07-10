@@ -73,7 +73,7 @@ func (h *UserHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := h.Service.SignIn(r.Context(), req.Email, req.Password)
+	resp, err := h.Service.SignIn(r.Context(), req.Login, req.Password)
 	if err != nil {
 		log.Printf("error: %v", err)
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)

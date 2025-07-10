@@ -89,6 +89,27 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (mode
 	return user, nil
 }
 
+func (r *UserRepository) GetUserByLogin(ctx context.Context, login string) (models.User, error) {
+	var user models.User
+	query := `
+        SELECT id, name, phone, email, password, role, created_at, updated_at
+        FROM users
+        WHERE name = ?
+    `
+	err := r.DB.QueryRowContext(ctx, query, login).Scan(
+		&user.ID, &user.Name, &user.Phone, &user.Email, &user.Password,
+		&user.Role,
+		&user.CreatedAt, &user.UpdatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return models.User{}, ErrUserNotFound
+	}
+	if err != nil {
+		return models.User{}, err
+	}
+	return user, nil
+}
+
 // GetUserByID retrieves a user by id.
 func (r *UserRepository) GetUserByID(ctx context.Context, id int) (models.User, error) {
 	var user models.User

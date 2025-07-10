@@ -21,27 +21,34 @@ import (
 )
 
 type application struct {
-	errorLog    *log.Logger
-	infoLog     *log.Logger
-	userHandler *handlers.UserHandler
-	userRepo    *repositories.UserRepository
+	errorLog      *log.Logger
+	infoLog       *log.Logger
+	userHandler   *handlers.UserHandler
+	userRepo      *repositories.UserRepository
+	reviewHandler *handlers.ReviewHandler
+	reviewRepo    *repositories.ReviewRepository
 }
 
 func initializeApp(db *sql.DB, errorLog, infoLog *log.Logger) *application {
 	// Repositories
 	userRepo := repositories.UserRepository{DB: db}
+	reviewRepo := repositories.ReviewRepository{DB: db}
 
 	// Services
 	userService := &services.UserService{UserRepo: &userRepo}
+	reviewService := &services.ReviewService{Repo: &reviewRepo}
 
 	// Handlers
 	userHandler := &handlers.UserHandler{Service: userService}
+	reviewHandler := &handlers.ReviewHandler{Service: reviewService}
 
 	return &application{
-		errorLog:    errorLog,
-		infoLog:     infoLog,
-		userHandler: userHandler,
-		userRepo:    &userRepo,
+		errorLog:      errorLog,
+		infoLog:       infoLog,
+		userHandler:   userHandler,
+		userRepo:      &userRepo,
+		reviewHandler: reviewHandler,
+		reviewRepo:    &reviewRepo,
 	}
 }
 

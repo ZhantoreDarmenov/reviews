@@ -35,16 +35,16 @@ type UserService struct {
 	TokenManager *utils.Manager
 }
 
-func (s *UserService) SignIn(ctx context.Context, email, password string) (models.Tokens, error) {
-	user, err := s.UserRepo.GetUserByEmail(ctx, email)
+func (s *UserService) SignIn(ctx context.Context, login, password string) (models.Tokens, error) {
+	user, err := s.UserRepo.GetUserByLogin(ctx, login)
 	if err != nil {
-		log.Printf("User not found: %s", email)
+		log.Printf("User not found: %s", login)
 		return models.Tokens{}, errors.New("user not found")
 	}
 
 	// Compare the provided password with the hashed password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		log.Printf("Invalid password for user: %s", email)
+		log.Printf("Invalid password for user: %s", login)
 		return models.Tokens{}, errors.New("invalid password")
 	}
 

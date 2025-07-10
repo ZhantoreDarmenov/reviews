@@ -34,7 +34,7 @@ type Session struct {
 }
 
 type SignInRequest struct {
-	Email    string `json:"email"`
+	Login    string `json:"login"`
 	Password string `json:"password"`
 }
 
