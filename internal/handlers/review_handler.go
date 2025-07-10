@@ -57,7 +57,9 @@ func (h *ReviewHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	rev := models.Reviews{
 		Name:        name,
-		Photo:       fmt.Sprintf("/static/reviews/%s", filename),
+
+		Photo:       fmt.Sprintf("/images/reviews/%s", filename),
+
 		Description: description,
 		Rating:      rating,
 	}
@@ -112,4 +114,32 @@ func (h *ReviewHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// ServeReviewImage handles GET /images/reviews/:filename requests and serves saved review images.
+func (h *ReviewHandler) ServeReviewImage(w http.ResponseWriter, r *http.Request) {
+	filename := r.URL.Query().Get(":filename")
+	if filename == "" {
+		http.Error(w, "filename is required", http.StatusBadRequest)
+		return
+	}
+
+	imagePath := filepath.Join("uploads", "reviews", filename)
+	if _, err := os.Stat(imagePath); os.IsNotExist(err) {
+		http.Error(w, "image not found", http.StatusNotFound)
+		return
+	}
+
+	switch filepath.Ext(imagePath) {
+	case ".jpg", ".jpeg":
+		w.Header().Set("Content-Type", "image/jpeg")
+	case ".png":
+		w.Header().Set("Content-Type", "image/png")
+	case ".gif":
+		w.Header().Set("Content-Type", "image/gif")
+	default:
+		w.Header().Set("Content-Type", "application/octet-stream")
+	}
+
+	http.ServeFile(w, r, imagePath)
 }
