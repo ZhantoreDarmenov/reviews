@@ -26,6 +26,8 @@ func (h *ReviewHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	name := r.FormValue("name")
 	description := r.FormValue("description")
+	industry := r.FormValue("industry")
+	service := r.FormValue("service")
 	ratingStr := r.FormValue("rating")
 	rating, _ := strconv.Atoi(ratingStr)
 
@@ -35,6 +37,12 @@ func (h *ReviewHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
+
+	pdfPath := ""
+	pdfFile, pdfHeader, errPdf := r.FormFile("pdf")
+	if errPdf == nil {
+		defer pdfFile.Close()
+	}
 
 	saveDir := filepath.Join("uploads", "reviews")
 	if err := os.MkdirAll(saveDir, 0755); err != nil {
@@ -55,10 +63,30 @@ func (h *ReviewHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rev := models.Reviews{
-		Name:        name,
+	if errPdf == nil {
+		pdfFilename := fmt.Sprintf("review_%d%s", time.Now().UnixNano(), filepath.Ext(pdfHeader.Filename))
+		pdfOut := filepath.Join(saveDir, pdfFilename)
+		pdfDst, err := os.Create(pdfOut)
+		if err != nil {
+			http.Error(w, "unable to save pdf", http.StatusInternalServerError)
+			return
+		}
+		defer pdfDst.Close()
+		if _, err := io.Copy(pdfDst, pdfFile); err != nil {
+			http.Error(w, "unable to save pdf", http.StatusInternalServerError)
+			return
+		}
+		pdfPath = fmt.Sprintf("/pdfs/reviews/%s", pdfFilename)
+	}
 
-		Photo:       fmt.Sprintf("/images/reviews/%s", filename),
+	rev := models.Reviews{
+		Name: name,
+
+		Photo: fmt.Sprintf("/images/reviews/%s", filename),
+
+		PdfFile:  pdfPath,
+		Industry: industry,
+		Service:  service,
 
 		Description: description,
 		Rating:      rating,
@@ -100,6 +128,8 @@ func (h *ReviewHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(r.URL.Query().Get(":id"))
 	name := r.FormValue("name")
 	description := r.FormValue("description")
+	industry := r.FormValue("industry")
+	service := r.FormValue("service")
 	ratingStr := r.FormValue("rating")
 	rating, _ := strconv.Atoi(ratingStr)
 
@@ -110,6 +140,7 @@ func (h *ReviewHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	photoPath := existing.Photo
+	pdfPath := existing.PdfFile
 	file, header, err := r.FormFile("photo")
 	if err == nil {
 		defer file.Close()
@@ -133,10 +164,36 @@ func (h *ReviewHandler) Update(w http.ResponseWriter, r *http.Request) {
 		photoPath = fmt.Sprintf("/images/reviews/%s", filename)
 	}
 
+	pdfFile, pdfHeader, errPdf := r.FormFile("pdf")
+	if errPdf == nil {
+		defer pdfFile.Close()
+		saveDir := filepath.Join("uploads", "reviews")
+		if err := os.MkdirAll(saveDir, 0755); err != nil {
+			http.Error(w, "unable to create image directory", http.StatusInternalServerError)
+			return
+		}
+		pdfFilename := fmt.Sprintf("review_%d%s", time.Now().UnixNano(), filepath.Ext(pdfHeader.Filename))
+		pdfOut := filepath.Join(saveDir, pdfFilename)
+		dstPdf, err := os.Create(pdfOut)
+		if err != nil {
+			http.Error(w, "unable to save pdf", http.StatusInternalServerError)
+			return
+		}
+		defer dstPdf.Close()
+		if _, err := io.Copy(dstPdf, pdfFile); err != nil {
+			http.Error(w, "unable to save pdf", http.StatusInternalServerError)
+			return
+		}
+		pdfPath = fmt.Sprintf("/pdfs/reviews/%s", pdfFilename)
+	}
+
 	rev := models.Reviews{
 		ID:          id,
 		Name:        name,
 		Photo:       photoPath,
+		PdfFile:     pdfPath,
+		Industry:    industry,
+		Service:     service,
 		Description: description,
 		Rating:      rating,
 	}
@@ -184,4 +241,22 @@ func (h *ReviewHandler) ServeReviewImage(w http.ResponseWriter, r *http.Request)
 	}
 
 	http.ServeFile(w, r, imagePath)
+}
+
+// ServeReviewPDF handles GET /pdfs/reviews/:filename requests and serves saved PDF files.
+func (h *ReviewHandler) ServeReviewPDF(w http.ResponseWriter, r *http.Request) {
+	filename := r.URL.Query().Get(":filename")
+	if filename == "" {
+		http.Error(w, "filename is required", http.StatusBadRequest)
+		return
+	}
+
+	pdfPath := filepath.Join("uploads", "reviews", filename)
+	if _, err := os.Stat(pdfPath); os.IsNotExist(err) {
+		http.Error(w, "pdf not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/pdf")
+	http.ServeFile(w, r, pdfPath)
 }
