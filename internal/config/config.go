@@ -20,28 +20,28 @@ type Config struct {
 func LoadConfig() Config {
 	var cfg Config
 
-	data, err := os.ReadFile("C:\\Users\\User\\Desktop\\reviews\\config\\config.yaml")
-	//path := os.Getenv("CONFIG_PATH")
-	//if path == "" {
-	//	path = "config/config.yaml"
-	//}
-	//
-	//data, err := os.ReadFile(path)
+	// Получаем путь из переменной окружения или используем по умолчанию
+	path := os.Getenv("CONFIG_PATH")
+	if path == "" {
+		path = "config/config.yaml"
+	}
+
+	data, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatalf("Failed to read config file: %v", err)
 	}
-	//
-	err = yaml.Unmarshal(data, &cfg)
-	if err != nil {
-		//if err = yaml.Unmarshal(data, &cfg); err != nil {
+
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		log.Fatalf("Failed to unmarshal config data: %v", err)
 	}
-	//if v := os.Getenv("DATABASE_URL"); v != "" {
-	//	cfg.Database.URL = v
-	//}
-	//
-	//if v := os.Getenv("SERVER_ADDRESS"); v != "" {
-	//	cfg.Server.Address = v
-	//}
+
+	// Переопределяем значениями из переменных окружения, если есть
+	if v := os.Getenv("DATABASE_URL"); v != "" {
+		cfg.Database.URL = v
+	}
+	if v := os.Getenv("SERVER_ADDRESS"); v != "" {
+		cfg.Server.Address = v
+	}
+
 	return cfg
 }
