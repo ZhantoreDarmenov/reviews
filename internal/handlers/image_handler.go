@@ -15,7 +15,7 @@ func (h *ImageHandler) ServeServiceImage(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	imagePath := filepath.Join("cmd/uploads/services", filename)
+	imagePath := filepath.Join("cmd/uploads/reviews", filename)
 
 	if _, err := os.Stat(imagePath); os.IsNotExist(err) {
 		http.Error(w, "image not found", http.StatusNotFound)
