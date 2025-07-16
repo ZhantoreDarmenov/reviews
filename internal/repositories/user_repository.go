@@ -19,6 +19,29 @@ type UserRepository struct {
 	DB *sql.DB
 }
 
+func (r *UserRepository) ClearSession(ctx context.Context, id string) error {
+	query := `
+                UPDATE users
+                SET refresh_token = NULL, expires_at = NULL
+                WHERE id = ?
+        `
+	result, err := r.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("no rows updated")
+	}
+
+	return nil
+}
+
 func (r *UserRepository) SetSession(ctx context.Context, id string, session models.Session) error {
 
 	query := `

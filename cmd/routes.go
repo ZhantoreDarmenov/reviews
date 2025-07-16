@@ -21,11 +21,12 @@ func (app *application) routes() http.Handler {
 	// Users
 	mux.Post("/user/sign_up", standardMiddleware.ThenFunc(app.userHandler.SignUp))
 	mux.Post("/user/sign_in", standardMiddleware.ThenFunc(app.userHandler.SignIn))
+	mux.Post("/user/logout", authMiddleware.ThenFunc(app.userHandler.Logout))
 
 	// Reviews
 	mux.Post("/reviews", authMiddleware.ThenFunc(app.reviewHandler.Create))
-	mux.Get("/reviews", authMiddleware.ThenFunc(app.reviewHandler.GetAll))
-	mux.Get("/reviews/:id", authMiddleware.ThenFunc(app.reviewHandler.GetByID))
+	mux.Get("/reviews", standardMiddleware.ThenFunc(app.reviewHandler.GetAll))
+	mux.Get("/reviews/:id", standardMiddleware.ThenFunc(app.reviewHandler.GetByID))
 	mux.Put("/reviews/:id", authMiddleware.ThenFunc(app.reviewHandler.Update))
 	mux.Del("/reviews/:id", authMiddleware.ThenFunc(app.reviewHandler.Delete))
 

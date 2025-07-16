@@ -45,7 +45,13 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:3001", "http://localhost:5173", "http://localhost:5174"},
+		AllowedOrigins: []string{
+			"http://localhost:3000",
+			"http://localhost:3001",
+			"http://localhost:5173",
+			"http://localhost:5174",
+			"https://preview-admin-panel-creation-kzmqzeigysqrkgsy8lzt.vusercontent.net",
+		},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowCredentials: true,
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},

@@ -13,7 +13,6 @@ type UserHandler struct {
 	Service *services.UserService
 }
 
-
 // SignUp registers a new user and returns auth tokens.
 func (h *UserHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 	var user models.User
@@ -53,4 +52,19 @@ func (h *UserHandler) SignIn(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(resp)
+}
+
+func (h *UserHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("user_id").(int)
+	if !ok {
+		http.Error(w, "user id missing", http.StatusUnauthorized)
+		return
+	}
+	if err := h.Service.Logout(r.Context(), userID); err != nil {
+		log.Printf("logout error: %v", err)
+		http.Error(w, "failed to logout", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "logout successful"})
 }
