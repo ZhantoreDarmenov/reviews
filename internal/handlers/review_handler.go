@@ -39,7 +39,10 @@ func (h *ReviewHandler) Create(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	pdfPath := ""
-	pdfFile, pdfHeader, errPdf := r.FormFile("pdf")
+	pdfFile, pdfHeader, errPdf := r.FormFile("pdf_file")
+	if errPdf != nil {
+		pdfFile, pdfHeader, errPdf = r.FormFile("pdf")
+	}
 	if errPdf == nil {
 		defer pdfFile.Close()
 	}
@@ -164,7 +167,10 @@ func (h *ReviewHandler) Update(w http.ResponseWriter, r *http.Request) {
 		photoPath = fmt.Sprintf("/images/reviews/%s", filename)
 	}
 
-	pdfFile, pdfHeader, errPdf := r.FormFile("pdf")
+	pdfFile, pdfHeader, errPdf := r.FormFile("pdf_file")
+	if errPdf != nil {
+		pdfFile, pdfHeader, errPdf = r.FormFile("pdf")
+	}
 	if errPdf == nil {
 		defer pdfFile.Close()
 		saveDir := filepath.Join("uploads", "reviews")
