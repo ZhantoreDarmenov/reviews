@@ -28,7 +28,11 @@ func (r *ReviewRepository) CreateReview(ctx context.Context, rev models.Reviews)
 }
 
 func (r *ReviewRepository) GetReviews(ctx context.Context) ([]models.Reviews, error) {
-	rows, err := r.DB.QueryContext(ctx, `SELECT id, name, photo, pdf_file, industry, service, description, rating, created_at, updated_at FROM reviews`)
+	rows, err := r.DB.QueryContext(ctx, `SELECT id, name, photo,
+               IFNULL(pdf_file, '')    AS pdf_file,
+               IFNULL(industry, '')    AS industry,
+               IFNULL(service, '')     AS service,
+               description, rating, created_at, updated_at FROM reviews`)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +51,11 @@ func (r *ReviewRepository) GetReviews(ctx context.Context) ([]models.Reviews, er
 
 func (r *ReviewRepository) GetReviewByID(ctx context.Context, id int) (models.Reviews, error) {
 	var rev models.Reviews
-	err := r.DB.QueryRowContext(ctx, `SELECT id, name, photo, pdf_file, industry, service, description, rating, created_at, updated_at FROM reviews WHERE id = ?`, id).Scan(
+	err := r.DB.QueryRowContext(ctx, `SELECT id, name, photo,
+               IFNULL(pdf_file, '')    AS pdf_file,
+               IFNULL(industry, '')    AS industry,
+               IFNULL(service, '')     AS service,
+               description, rating, created_at, updated_at FROM reviews WHERE id = ?`, id).Scan(
 		&rev.ID, &rev.Name, &rev.Photo, &rev.PdfFile, &rev.Industry, &rev.Service, &rev.Description, &rev.Rating, &rev.CreatedAt, &rev.UpdatedAt,
 	)
 	if err != nil {
